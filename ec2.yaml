@@ -1,17 +1,16 @@
 ---
 - name: Install wordpress on CentOS 7
   # gather_facts: no
-  hosts: 3.19.32.24
+  hosts: all
   become: true
   become_method: sudo
   user: centos
-  vars:
-    mysql_root_password: "password"
   tasks:
     - name: add users
       user:
         name: "{{ item }}"
         state: present
+        generate_ssh_key: yes
       with_items:
         - bob
         - ben
@@ -38,24 +37,6 @@
         - php-mysql
         - php-gd
       ignore_errors: yes
-    - name: enable MariaDB
-      service: name=mariadb enabled=yes
-    - name: update mysql root password for all root accounts
-      mysql_user:
-        name: root
-        host: "{{ item }}"
-        password: "{{ mysql_root_password }}"
-        login_user: root
-        login_password: "{{ mysql_root_password }}"
-        check_implicit_admin: yes
-        priv: "*.*:ALL,GRANT"
-    - name: create a new database wordpressdb
-      mysql_db: name=wordpressdb state=present login_user=root login_password={{ mysql_root_password }}
-      with_items:
-        - "{{ ansible_hostname }}"
-        - 127.0.0.1
-        - ::1
-        - localhost
     # - name: Download wordpress
     #   get_url:
     #     url: https://wordpress.org/latest.tar.gz
@@ -71,7 +52,6 @@
     - name: Move index.html
       shell: "mv /var/www/html/index.html /tmp/"
       ignore_errors: true
-    - command: chown -R apache:apache /var/www/html/
     - name: run apache
       systemd:
         name: httpd
@@ -83,10 +63,10 @@
   gather_facts: false
   tasks:
     - route53:
-        command: create
+        command: present
         zone: maxirs.com
-        record: test.maxirs.com
+        record: wordpress.maxirs.com
         type: A
         ttl: 60
-        value: 3.19.32.24
+        value: 3.14.72.47
         wait: yes
