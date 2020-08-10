@@ -1,7 +1,7 @@
 ---
-- name: create username and public key
+- name: create / remove users and public keys
   # gather_facts: no
-  hosts: all
+  hosts: localhost
   become: true
   become_method: sudo
   user: centos
@@ -13,13 +13,21 @@
   tasks:
     - debug:
         msg: 'Logging in as {{ username }}'
-    - name: add users
+    - tags: add user
+      name: add users
       user:
         name: "{{username}}"
         state: present
+        generate_ssh_key: true
 
     - name: Set authorized key took from file
       authorized_key:
         user: "{{ username }}"
         state: present
         key: "{{ lookup('file', '/home/ec2-user/.ssh/id_rsa.pub') }}"
+    - tags: remove user
+      name: removing users
+      user:
+        name: "{{username}}"
+        state: absent
+        remove: yes
